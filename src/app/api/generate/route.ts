@@ -1,12 +1,11 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
-  // Lấy thông tin từ request body
   const { subject, grade, topic, questionCount } = await req.json();
 
-  // Lấy ID môn học từ bảng subjects
+  // Lấy ID môn học
   const { data: subjectData, error: subjectError } = await supabase
     .from('subjects')
     .select('id')
@@ -17,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Môn học không hợp lệ.' }, { status: 400 });
   }
 
-  // Lấy ID lớp học từ bảng grades
+  // Lấy ID lớp học
   const { data: gradeData, error: gradeError } = await supabase
     .from('grades')
     .select('id')
@@ -28,38 +27,64 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Lớp học không hợp lệ.' }, { status: 400 });
   }
 
-  // Khởi tạo Google GenAI API với API Key
-  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
+  const ai = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
-  // Tạo prompt để gửi cho AI, điều chỉnh số lượng câu hỏi theo yêu cầu
-  const prompt = `Hãy tạo ${questionCount} câu hỏi trắc nghiệm môn ${subject}, lớp ${grade}, chủ đề ${topic}, mỗi câu có 4 đáp án A, B, C, D và gợi ý đáp án đúng.`;
+  const prompt = `Hãy tạo ${questionCount} câu hỏi trắc nghiệm môn ${subject}, lớp ${grade}, chủ đề ${topic}.
+Mỗi câu có định dạng như sau (không giải thích):
+
+**Câu X:** Nội dung câu hỏi?
+A. Đáp án A  
+B. Đáp án B  
+C. Đáp án C  
+D. Đáp án D  
+**Gợi ý đáp án:** <A/B/C/D>`;
 
   try {
-    // Gửi yêu cầu tới Google GenAI API để tạo câu hỏi
-    const result = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: prompt,
+const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+const result = await model.generateContent({
+  contents: [{ role: 'user', parts: [{ text: prompt }] }],
+});
+
+const markdownText = await result.response.text();
+
+
+
+
+    // Parse markdown Gemini trả về
+    const questions = markdownText.trim().split('**Câu ').slice(1).map((block: string, index: any) => {
+      const lines = block.trim().split('\n');
+      const content = lines[0].split(':')[1]?.trim() || '';
+      const answers = lines.slice(1, 5).map((line: string) => line.replace(/^[A-D]\.\s*/, '').trim());
+      const correctLine = lines.find((line: string | string[]) => line.includes('**Gợi ý đáp án:**')) || '';
+      const correctAnswer = correctLine.split('**Gợi ý đáp án:**')[1]?.trim()?.toUpperCase() || '';
+      return {
+        content,
+        answers,
+        correct_answer: correctAnswer,
+      };
     });
 
-    const questions = result.text;
-
-    // Lưu câu hỏi vào bảng questions với subject_id và grade_id
-    const { error } = await supabase.from('questions').insert([{
+    // Lưu từng câu hỏi vào bảng questions
+    const insertData = questions.map((q: { content: any; answers: any; correct_answer: any; }) => ({
       subject_id: subjectData.id,
       grade_id: gradeData.id,
       topic,
-      content: questions,
-    }]);
+      content: q.content,
+      answers: q.answers,
+      correct_answer: q.correct_answer,
+    }));
 
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error: insertError } = await supabase.from('questions').insert(insertData);
+
+    if (insertError) {
+      console.error('Lỗi khi lưu câu hỏi:', insertError);
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    // Trả về câu hỏi đã tạo
-    return NextResponse.json({ questions });
+    return NextResponse.json({ message: 'Tạo và lưu câu hỏi thành công', questions });
   } catch (error: any) {
-    console.error('Gemini error:', error);
+    console.error('Lỗi Gemini:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

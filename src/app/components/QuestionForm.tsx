@@ -12,7 +12,7 @@ export default function QuestionForm() {
   const [subject, setSubject] = useState('');
   const [grade, setGrade] = useState('');
   const [topic, setTopic] = useState('');
-  const [questions, setQuestions] = useState('');
+  const [questions, setQuestions] = useState<any[]>([]);
   const [savedQuestions, setSavedQuestions] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -41,7 +41,7 @@ export default function QuestionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setQuestions('');
+    setQuestions([]);
 
     const res = await fetch('/api/generate', {
       method: 'POST',
@@ -50,11 +50,11 @@ export default function QuestionForm() {
     });
 
     const data = await res.json();
-    if (data.questions) {
+    if (data.questions && Array.isArray(data.questions)) {
       setQuestions(data.questions);
       fetchSavedQuestions();
     } else {
-      setQuestions('Đã xảy ra lỗi.');
+      setQuestions([]);
     }
     setLoading(false);
   };
@@ -135,14 +135,30 @@ export default function QuestionForm() {
         <CardHeader className="bg-green-500 text-white rounded-t-lg py-4 px-6">
           <CardTitle className="text-lg font-semibold">Câu hỏi đã tạo</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-        {loading ? (
-  <Spinner />
-) : (
-  questions && <pre className="whitespace-pre-wrap text-sm text-gray-700">{questions}</pre>
-)}
+ <CardContent className="p-6">
+  {loading ? (
+    <Spinner />
+  ) : (
+    questions.length > 0 ? (
+      <div className="space-y-4">
+        {questions.map((q, idx) => (
+          <div key={idx} className="border-b border-gray-200 py-4 space-y-2">
+            <p className="font-medium text-gray-800">📌 <strong>Câu {idx + 1}:</strong> {q.content}</p>
+            {q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, i: number) => (
+              <div key={i} className="pl-4">
+                <span className="font-semibold">{String.fromCharCode(65 + i)}.</span> {ans}
+              </div>
+            ))}
+            <p className="text-green-600 font-semibold">✔️ Đáp án đúng: {q.correct_answer}</p>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-500">Chưa có câu hỏi nào được tạo.</p>
+    )
+  )}
+</CardContent>
 
-        </CardContent>
       </Card>
 
       <Card className="shadow-lg rounded-lg bg-white">
@@ -153,11 +169,18 @@ export default function QuestionForm() {
           {savedQuestions.length === 0 ? (
             <p className="text-gray-500">Chưa có câu hỏi nào được lưu.</p>
           ) : (
-            savedQuestions.map((q) => (
-              <div key={q.id} className="border-b border-gray-200 py-2">
-                <pre className="whitespace-pre-wrap text-sm text-gray-700">{q.content}</pre>
-              </div>
-            ))
+           savedQuestions.map((q) => (
+  <div key={q.id} className="border-b border-gray-200 py-4 space-y-2">
+    <p className="font-medium text-gray-800">📌 <strong>Câu hỏi:</strong> {q.content}</p>
+    {q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, idx: number) => (
+      <div key={idx} className="pl-4">
+        <span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {ans}
+      </div>
+    ))}
+    <p className="text-green-600 font-semibold">✔️ Đáp án đúng: {q.correct_answer}</p>
+  </div>
+))
+
           )}
         </CardContent>
       </Card>
