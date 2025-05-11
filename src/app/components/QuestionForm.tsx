@@ -18,6 +18,7 @@ export default function QuestionForm() {
   const [grades, setGrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [questionCount, setQuestionCount] = useState(5);
+  const [difficulty, setDifficulty] = useState('Trung bình');  // Thêm lựa chọn độ khó
 
   useEffect(() => {
     const fetchSubjectsAndGrades = async () => {
@@ -68,7 +69,6 @@ export default function QuestionForm() {
         <CardContent className="p-6 space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Các input giữ nguyên như trước */}
-
             <div className="space-y-2">
               <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Môn học</label>
               <select
@@ -124,6 +124,21 @@ export default function QuestionForm() {
               />
             </div>
 
+            {/* Thêm lựa chọn độ khó */}
+            <div className="space-y-2">
+              <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">Độ khó</label>
+              <select
+                id="difficulty"
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Dễ">Dễ</option>
+                <option value="Trung bình">Trung bình</option>
+                <option value="Khó">Khó</option>
+              </select>
+            </div>
+
             <Button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
               {loading ? 'Đang tạo câu hỏi...' : 'Tạo câu hỏi'}
             </Button>
@@ -135,30 +150,30 @@ export default function QuestionForm() {
         <CardHeader className="bg-green-500 text-white rounded-t-lg py-4 px-6">
           <CardTitle className="text-lg font-semibold">Câu hỏi đã tạo</CardTitle>
         </CardHeader>
- <CardContent className="p-6">
-  {loading ? (
-    <Spinner />
-  ) : (
-    questions.length > 0 ? (
-      <div className="space-y-4">
-        {questions.map((q, idx) => (
-          <div key={idx} className="border-b border-gray-200 py-4 space-y-2">
-            <p className="font-medium text-gray-800">📌 <strong>Câu {idx + 1}:</strong> {q.content}</p>
-            {q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, i: number) => (
-              <div key={i} className="pl-4">
-                <span className="font-semibold">{String.fromCharCode(65 + i)}.</span> {ans}
+        <CardContent className="p-6">
+          {loading ? (
+            <Spinner />
+          ) : (
+            questions.length > 0 ? (
+              <div className="space-y-4">
+                {questions.map((q, idx) => (
+                  <div key={idx} className="border-b border-gray-200 py-4 space-y-2">
+                    <p className="font-medium text-gray-800">📌 <strong>Câu {idx + 1}:</strong> {q.content}</p>
+                    {q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, i: number) => (
+                      <div key={i} className="pl-4">
+                        <span className="font-semibold">{String.fromCharCode(65 + i)}.</span> {ans}
+                      </div>
+                    ))}
+                    <p className="text-green-600 font-semibold">✔️ Đáp án đúng: {q.correct_answer}</p>
+                    <p className="text-gray-500">Độ khó: {q.difficulty}</p> {/* Hiển thị độ khó */}
+                  </div>
+                ))}
               </div>
-            ))}
-            <p className="text-green-600 font-semibold">✔️ Đáp án đúng: {q.correct_answer}</p>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-gray-500">Chưa có câu hỏi nào được tạo.</p>
-    )
-  )}
-</CardContent>
-
+            ) : (
+              <p className="text-gray-500">Chưa có câu hỏi nào được tạo.</p>
+            )
+          )}
+        </CardContent>
       </Card>
 
       <Card className="shadow-lg rounded-lg bg-white">
@@ -169,21 +184,21 @@ export default function QuestionForm() {
           {savedQuestions.length === 0 ? (
             <p className="text-gray-500">Chưa có câu hỏi nào được lưu.</p>
           ) : (
-           savedQuestions.map((q) => (
-  <div key={q.id} className="border-b border-gray-200 py-4 space-y-2">
-    <p className="font-medium text-gray-800">📌 <strong>Câu hỏi:</strong> {q.content}</p>
-    {q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, idx: number) => (
-      <div key={idx} className="pl-4">
-        <span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {ans}
-      </div>
-    ))}
-    <p className="text-green-600 font-semibold">✔️ Đáp án đúng: {q.correct_answer}</p>
-  </div>
+            savedQuestions.map((q) => (
+              <div key={q.id} className="border-b border-gray-200 py-4 space-y-2">
+<p className="font-medium text-gray-800">📌 <strong>Câu hỏi:</strong> {q.content}</p>
+{q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, idx: number) => (
+<div key={idx} className="pl-4">
+<span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {ans}
+</div>
+))}
+<p className="text-green-600 font-semibold">✔️ Đáp án đúng: {q.correct_answer}</p>
+<p className="text-gray-500">Độ khó: {q.difficulty}</p> {/* Hiển thị độ khó */}
+</div>
 ))
-
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+)}
+</CardContent>
+</Card>
+</div>
+);
 }

@@ -43,7 +43,7 @@ D. Đáp án D
     const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      contents: [{ role: 'user', parts: [{ text: prompt }] }], 
     });
 
     const markdownText = await result.response.text();
@@ -51,14 +51,17 @@ D. Đáp án D
     // Parse markdown Gemini trả về
     const questions = markdownText.trim().split('**Câu ').slice(1).map((block: string, index: any) => {
       const lines = block.trim().split('\n');
-      const content = lines[0].split(':')[1]?.trim() || '';
+      const content = lines[0].split(':')[1]?.trim() || '';  // Trích xuất nội dung câu hỏi
       const answers = lines.slice(1, 5).map((line: string) => line.replace(/^[A-D]\.\s*/, '').trim());
       const correctLine = lines.find((line: string | string[]) => line.includes('**Gợi ý đáp án:**')) || '';
       const correctAnswer = correctLine.split('**Gợi ý đáp án:**')[1]?.trim()?.toUpperCase() || '';
+      const difficulty = 'Trung bình';  // Đặt độ khó mặc định, có thể thay đổi theo logic riêng
+
       return {
         content,
         answers,
         correct_answer: correctAnswer,
+        difficulty,
       };
     });
 
@@ -67,8 +70,6 @@ D. Đáp án D
       .from('tests')
       .insert([
         {
-          subject_id: subjectData.id,
-          grade_id: gradeData.id,
           name: `Bài kiểm tra - ${topic}`,
           description: `Chủ đề: ${topic}`,
         },
@@ -83,7 +84,7 @@ D. Đáp án D
     const testId = testData.id;
 
     // Lưu từng câu hỏi vào bảng questions với test_id
-    const insertData = questions.map((q: { content: any; answers: any; correct_answer: any; }) => ({
+    const insertData = questions.map((q: { content: any; answers: any; correct_answer: any; difficulty: any }) => ({
       subject_id: subjectData.id,
       grade_id: gradeData.id,
       topic,
@@ -91,13 +92,27 @@ D. Đáp án D
       answers: q.answers,
       correct_answer: q.correct_answer,
       test_id: testId,  // Liên kết câu hỏi với bài kiểm tra
+      difficulty: q.difficulty,  // Độ khó có thể thay đổi ở đây nếu có logic xác định
     }));
 
-    const { error: insertError } = await supabase.from('questions').insert(insertData);
+    const { data: insertedQuestions, error: insertError } = await supabase.from('questions').insert(insertData).select('id');
 
     if (insertError) {
       console.error('Lỗi khi lưu câu hỏi:', insertError);
       return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+
+    // Lưu mối quan hệ giữa bài kiểm tra và câu hỏi vào bảng test_questions
+    const testQuestionsData = insertedQuestions.map((q: { id: number }) => ({
+      test_id: testId,
+      question_id: q.id,
+    }));
+
+    const { error: insertTestQuestionsError } = await supabase.from('test_questions').insert(testQuestionsData);
+
+    if (insertTestQuestionsError) {
+      console.error('Lỗi khi lưu mối quan hệ bài kiểm tra và câu hỏi:', insertTestQuestionsError);
+      return NextResponse.json({ error: insertTestQuestionsError.message }, { status: 500 });
     }
 
     return NextResponse.json({ message: 'Tạo và lưu câu hỏi thành công', questions });
