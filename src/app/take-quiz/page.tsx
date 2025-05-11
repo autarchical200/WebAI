@@ -7,6 +7,8 @@ export default function TakeQuiz() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);  // Lưu số câu trả lời đúng
+  const [showPopup, setShowPopup] = useState(false);  // Điều khiển việc hiển thị popup
 
   useEffect(() => {
     const stored = localStorage.getItem('currentExam');
@@ -17,6 +19,21 @@ export default function TakeQuiz() {
 
   const handleSubmit = () => {
     setSubmitted(true);
+
+    // Tính số câu trả lời đúng
+    const correctAnswers = questions.reduce((count, q, idx) => {
+      if (answers[idx] === q.correct_answer) {
+        count++;
+      }
+      return count;
+    }, 0);
+
+    setCorrectCount(correctAnswers);
+    setShowPopup(true);  // Hiển thị popup sau khi nộp bài
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
   };
 
   return (
@@ -75,6 +92,21 @@ export default function TakeQuiz() {
         </Button>
       ) : (
         <p className="text-center text-blue-600 font-semibold">✅ Bạn đã nộp bài!</p>
+      )}
+
+      {/* Popup thông báo kết quả */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+            <h2 className="text-xl font-semibold">Bạn đã nộp bài!</h2>
+            <p className="mt-4 text-lg">Làm đúng {correctCount}/{questions.length}</p>
+            <div className="mt-6">
+              <Button onClick={closePopup} className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-800">
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

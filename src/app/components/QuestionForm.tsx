@@ -188,28 +188,29 @@ export default function QuestionForm() {
   )}
 </Card>
 
-      <Card className="shadow-lg rounded-lg bg-white">
-        <CardHeader className="bg-indigo-500 text-white rounded-t-lg py-4 px-6">
-          <CardTitle className="text-lg font-semibold">Câu hỏi đã lưu</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 space-y-4">
-          {savedQuestions.length === 0 ? (
-            <p className="text-gray-500">Chưa có câu hỏi nào được lưu.</p>
-          ) : (
-            savedQuestions.map((q) => (
-              <div key={q.id} className="border-b border-gray-200 py-4 space-y-2">
-<p className="font-medium text-gray-800">📌 <strong>Câu hỏi:</strong> {q.content}</p>
-{q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, idx: number) => (
-<div key={idx} className="pl-4">
-<span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {ans}
-</div>
-))}
-<p className="text-gray-500">Độ khó: {q.difficulty}</p> {/* Hiển thị độ khó */}
-</div>
-))
-)}
-</CardContent>
-</Card>
 </div>
 );
 }
+
+//       <Card className="shadow-lg rounded-lg bg-white">
+//         <CardHeader className="bg-indigo-500 text-white rounded-t-lg py-4 px-6">
+//           <CardTitle className="text-lg font-semibold">Câu hỏi đã lưu</CardTitle>
+//         </CardHeader>
+//         <CardContent className="p-6 space-y-4">
+//           {savedQuestions.length === 0 ? (
+//             <p className="text-gray-500">Chưa có câu hỏi nào được lưu.</p>
+//           ) : (
+//             savedQuestions.map((q) => (
+//               <div key={q.id} className="border-b border-gray-200 py-4 space-y-2">
+// <p className="font-medium text-gray-800">📌 <strong>Câu hỏi:</strong> {q.content}</p>
+// {q.answers && Array.isArray(q.answers) && q.answers.map((ans: string, idx: number) => (
+// <div key={idx} className="pl-4">
+// <span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {ans}
+// </div>
+// ))}
+// <p className="text-gray-500">Độ khó: {q.difficulty}</p> {/* Hiển thị độ khó */}
+// </div>
+// ))
+// )}
+// </CardContent>
+// </Card>
