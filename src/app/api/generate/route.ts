@@ -40,16 +40,13 @@ D. Đáp án D
 **Gợi ý đáp án:** <A/B/C/D>`;
 
   try {
-const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-const result = await model.generateContent({
-  contents: [{ role: 'user', parts: [{ text: prompt }] }],
-});
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
 
-const markdownText = await result.response.text();
-
-
-
+    const markdownText = await result.response.text();
 
     // Parse markdown Gemini trả về
     const questions = markdownText.trim().split('**Câu ').slice(1).map((block: string, index: any) => {
@@ -65,7 +62,27 @@ const markdownText = await result.response.text();
       };
     });
 
-    // Lưu từng câu hỏi vào bảng questions
+    // Tạo bài kiểm tra trong bảng tests
+    const { data: testData, error: testError } = await supabase
+      .from('tests')
+      .insert([
+        {
+          subject_id: subjectData.id,
+          grade_id: gradeData.id,
+          name: `Bài kiểm tra - ${topic}`,
+          description: `Chủ đề: ${topic}`,
+        },
+      ])
+      .select('id')
+      .single();
+
+    if (testError || !testData) {
+      return NextResponse.json({ error: 'Lỗi khi tạo bài kiểm tra.' }, { status: 500 });
+    }
+
+    const testId = testData.id;
+
+    // Lưu từng câu hỏi vào bảng questions với test_id
     const insertData = questions.map((q: { content: any; answers: any; correct_answer: any; }) => ({
       subject_id: subjectData.id,
       grade_id: gradeData.id,
@@ -73,6 +90,7 @@ const markdownText = await result.response.text();
       content: q.content,
       answers: q.answers,
       correct_answer: q.correct_answer,
+      test_id: testId,  // Liên kết câu hỏi với bài kiểm tra
     }));
 
     const { error: insertError } = await supabase.from('questions').insert(insertData);
